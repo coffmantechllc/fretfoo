@@ -13,30 +13,49 @@ export class CircleOfFifthsComponent implements AfterViewInit {
 
   // Innermost ring: Major keys
   majorKeys: string[] = ['C', 'G', 'D', 'A', 'E', 'B', 'Gb', 'Db', 'Ab', 'Eb', 'Bb', 'F'];
-  // Middle ring: Minor keys
-  minorKeys: string[] = ['Am', 'Em', 'Bm', 'F#m', 'C#m', 'G#m', 'D#m', 'A#m', 'Fm', 'Cm', 'Gm', 'Dm'];
-  // Outermost ring: Diminished chords (created by appending "dim" to each major key)
-  diminishedKeys: string[] = ['Bdim', 'F#dim', 'C#dim', 'G#dim', 'D#dim', 'A#dim', 'Fdim', 'Cdim', 'Gdim', 'Ddim', 'Adim', 'Edim'];
+  // Middle ring: Minor keys (with a trailing " m")
+  minorKeys: string[] = ['Am', 'Em', 'Bm', 'Gbm', 'Dbm', 'Abm', 'Ebm', 'Bbm', 'Fm', 'Cm', 'Gm', 'Dm'];
+  // Outermost ring: Diminished keys (explicitly defined)
+  diminishedKeys: string[] = ['Bø', 'Gbø', 'Dbø', 'Abø', 'Ebø', 'Bbø', 'Fø', 'Cø', 'Gø', 'Dø', 'Aø', 'Eø'];
 
-  // Radii definitions for each ring:
-  // Major (innermost): from 70 to 110
   majorInner: number = 70;
   majorOuter: number = 110;
-  // Minor (middle): from 110 to 150
+
   minorInner: number = 110;
   minorOuter: number = 150;
-  // Diminished (outermost): from 150 to 190
+
   diminishedInner: number = 150;
   diminishedOuter: number = 190;
+
+  // Local property for scale type.
+  selectedScaleType: string = 'major';
+
+  // Consolidated color array for scale degrees 1-7.
+  // Degree 1 → red, 2 → brown, 3 → yellow, 4 → green, 5 → blue, 6 → orange, 7 → violet.
+  scaleDegreeColors: string[] = ['red', 'brown', 'yellow', 'green', 'blue', 'orange', 'violet'];
+
+  // Scale mappings (semitones for degrees 1–7).
+  // Major scale: Degree 1:0, 2:2, 3:4, 4:5, 5:7, 6:9, 7:11.
+  majorScaleSemiTones: number[] = [0, 2, 4, 5, 7, 9, 11];
+  // Natural Minor scale: Degree 1:0, 2:2, 3:3, 4:5, 5:7, 6:8, 7:10.
+  minorScaleSemiTones: number[] = [0, 2, 3, 5, 7, 8, 10];
+
+  // Universal note order for computing relative intervals.
+  universalNotes: string[] = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
 
   constructor(private musicService: MusicSelectionService) { }
 
   ngAfterViewInit() {
     this.renderCircle();
 
-    // Subscribe to external changes of the selected root note.
+    // Subscribe to root note changes.
     this.musicService.rootNote$.subscribe(rootNote => {
       this.highlightRoot(rootNote);
+    });
+    // Subscribe to scale type changes.
+    this.musicService.scaleType$.subscribe(scaleType => {
+      this.selectedScaleType = scaleType;
+      // Optionally re-highlight (if desired, based on stored root note)
     });
   }
 
@@ -49,11 +68,11 @@ export class CircleOfFifthsComponent implements AfterViewInit {
       .attr('width', width)
       .attr('height', height);
 
-    // Center the group inside the SVG.
+    // Center the group.
     const group = svg.append('g')
       .attr('transform', `translate(${width / 2}, ${height / 2})`);
 
-    // Create a tooltip element.
+    // Create a tooltip.
     const tooltip = d3.select('body')
       .append('div')
       .attr('class', 'tooltip')
@@ -66,44 +85,36 @@ export class CircleOfFifthsComponent implements AfterViewInit {
       .style('font-size', '13px')
       .style('opacity', 0);
 
-    // Create a common pie layout for all rings.
     const pie = d3.pie<string>()
       .value(() => 1)
       .sort(null)
       .startAngle(-Math.PI / 2);
 
-    // Compute arc data arrays.
     const majorArcs = pie(this.majorKeys);
     const minorArcs = pie(this.minorKeys);
     const diminishedArcs = pie(this.diminishedKeys);
 
-    // Define arc generators for each ring.
     const majorArc = d3.arc<d3.PieArcDatum<string>>()
       .innerRadius(this.majorInner)
       .outerRadius(this.majorOuter);
-
     const minorArc = d3.arc<d3.PieArcDatum<string>>()
       .innerRadius(this.minorInner)
       .outerRadius(this.minorOuter);
-
     const diminishedArc = d3.arc<d3.PieArcDatum<string>>()
       .innerRadius(this.diminishedInner)
       .outerRadius(this.diminishedOuter);
 
-    // Define label arcs to center text within each slice.
     const majorLabelArc = d3.arc<d3.PieArcDatum<string>>()
       .innerRadius((this.majorInner + this.majorOuter) / 2)
       .outerRadius((this.majorInner + this.majorOuter) / 2);
-
     const minorLabelArc = d3.arc<d3.PieArcDatum<string>>()
       .innerRadius((this.minorInner + this.minorOuter) / 2)
       .outerRadius((this.minorInner + this.minorOuter) / 2);
-
     const diminishedLabelArc = d3.arc<d3.PieArcDatum<string>>()
       .innerRadius((this.diminishedInner + this.diminishedOuter) / 2)
       .outerRadius((this.diminishedInner + this.diminishedOuter) / 2);
 
-    // === Render Innermost Ring: Major Keys ===
+    // === Render Innermost Ring: Major keys.
     majorArcs.forEach((d) => {
       const key = d.data;
       const g = group.append('g')
@@ -141,7 +152,7 @@ export class CircleOfFifthsComponent implements AfterViewInit {
         .style('pointer-events', 'none');
     });
 
-    // === Render Middle Ring: Minor Keys ===
+    // === Render Middle Ring: Minor keys.
     minorArcs.forEach((d) => {
       const key = d.data;
       const g = group.append('g')
@@ -179,7 +190,7 @@ export class CircleOfFifthsComponent implements AfterViewInit {
         .style('pointer-events', 'none');
     });
 
-    // === Render Outermost Ring: Diminished Keys ===
+    // === Render Outermost Ring: Diminished keys.
     diminishedArcs.forEach((d) => {
       const key = d.data;
       const g = group.append('g')
@@ -202,7 +213,7 @@ export class CircleOfFifthsComponent implements AfterViewInit {
           tooltip.style('left', `${event.pageX + 10}px`)
             .style('top', `${event.pageY - 20}px`);
         })
-        .on('mouseout', () => {
+        .on('mouseout', (event: any) => {
           tooltip.transition().duration(100).style('opacity', 0);
         });
 
@@ -218,14 +229,16 @@ export class CircleOfFifthsComponent implements AfterViewInit {
     });
   }
 
-  // Instead of directly changing fill colors here, we update the shared MusicSelectionService.
+  // When a major key is selected.
   selectMajor(group: any, key: string) {
     this.musicService.setRootNote(key);
     this.keySelected.emit(key);
   }
 
+  // When a minor key is selected, strip any trailing "m".
   selectMinor(group: any, key: string) {
-    this.musicService.setRootNote(key);
+    const baseKey = key.replace(/\s*m$/, '');
+    this.musicService.setRootNote(baseKey);
     this.keySelected.emit(key);
   }
 
@@ -234,20 +247,66 @@ export class CircleOfFifthsComponent implements AfterViewInit {
     this.keySelected.emit(key);
   }
 
-  // This method updates the fill colors based on the external selected root note.
-  // In this example we highlight the matching key in the major (innermost) ring with red,
-  // and reset the other rings to their default fills.
+  // ---------------------------
+  // Updated highlightRoot() using the consolidated color mapping.
+  // Additionally, highlight the major 7th degree on the diminished arc.
   highlightRoot(selectedRoot: string) {
-    d3.selectAll('.major-key').each(function () {
-      const group = d3.select(this);
-      const key = group.attr('data-key');
-      group.select('path').attr('fill', key === selectedRoot ? 'red' : 'white');
-    });
-    d3.selectAll('.minor-key').each(function () {
-      d3.select(this).select('path').attr('fill', 'lightyellow');
-    });
-    d3.selectAll('.diminished-key').each(function () {
-      d3.select(this).select('path').attr('fill', 'white');
+    const unotes = this.universalNotes;
+    const rootIdx = unotes.indexOf(selectedRoot);
+
+    if (this.selectedScaleType === 'major') {
+      // For a major scale, relative minor is 9 semitones up.
+      const relativeMinor = unotes[(rootIdx + 9) % 12];
+      // Major ring: highlight the arc that matches the selected root with degree 1 (red).
+      d3.selectAll('.major-key').each((_, i, nodes) => {
+        const group = d3.select(nodes[i]);
+        const key = group.attr('data-key');
+        group.select('path').attr('fill', key === selectedRoot ? this.scaleDegreeColors[0] : 'white');
+      });
+      // Minor ring: highlight the arc that matches the relative minor with degree 6 (orange).
+      d3.selectAll('.minor-key').each((_, i, nodes) => {
+        const group = d3.select(nodes[i]);
+        const keyRaw = group.attr('data-key');
+        const key = keyRaw.replace(/m$/, '');
+        group.select('path').attr('fill', key === relativeMinor ? this.scaleDegreeColors[5] : 'lightyellow');
+      });
+    } else if (this.selectedScaleType === 'minor') {
+      // For a minor scale, relative major is 3 semitones up.
+      const relativeMajor = unotes[(rootIdx + 3) % 12];
+      // Minor ring: highlight the arc that matches the selected minor root (strip "m") with degree 6 (orange).
+      d3.selectAll('.minor-key').each((_, i, nodes) => {
+        const group = d3.select(nodes[i]);
+        const keyRaw = group.attr('data-key');
+        const key = keyRaw.replace(/m$/, '');
+        group.select('path').attr('fill', key === selectedRoot ? this.scaleDegreeColors[5] : 'lightyellow');
+      });
+      // Major ring: highlight the arc that matches the relative major with degree 1 (red).
+      d3.selectAll('.major-key').each((_, i, nodes) => {
+        const group = d3.select(nodes[i]);
+        const key = group.attr('data-key');
+        group.select('path').attr('fill', key === relativeMajor ? this.scaleDegreeColors[0] : 'white');
+      });
+    }
+
+    // Now, regardless of scale type, compute the major 7th.
+    // If scale type is major, major 7th = (root + 11) mod 12.
+    // If minor, compute relative major first, then major 7th = (relativeMajor + 11) mod 12.
+    let computedMajor7th: string;
+    if (this.selectedScaleType === 'major') {
+      computedMajor7th = unotes[(rootIdx + 11) % 12];
+    } else { // minor
+      const baseMinor = selectedRoot.replace(/\s*m$/, '');
+      const relativeMajor = unotes[(unotes.indexOf(baseMinor) + 3) % 12];
+      computedMajor7th = unotes[(unotes.indexOf(relativeMajor) + 11) % 12];
+    }
+    // Highlight the diminished ring arc that corresponds to the computed major 7th.
+    d3.selectAll('.diminished-key').each((_, i, nodes) => {
+      const group = d3.select(nodes[i]);
+      // Remove the 'ø' character from the diminished key.
+      const diminishedKeyRaw = group.attr('data-key');
+      const diminishedKey = diminishedKeyRaw.replace(/ø/g, '');
+      group.select('path').attr('fill', (diminishedKey === computedMajor7th) ? this.scaleDegreeColors[6] : 'white');
     });
   }
+  // ---------------------------
 }

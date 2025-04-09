@@ -1,4 +1,3 @@
-// scale-selector.component.ts
 import { Component } from '@angular/core';
 import { MusicSelectionService } from '../services/music-selection.service';
 
@@ -15,10 +14,17 @@ export class ScaleSelectorComponent {
 
   constructor(private musicService: MusicSelectionService) { }
 
-  // Call this method when a root note is selected (for example, via a button click)
+  // Called when the root note dropdown changes.
   onRootNoteChange(event: Event): void {
     const target = event.target as HTMLSelectElement;
     this.selectedRootNote = target.value;
     this.musicService.setRootNote(this.selectedRootNote);
+  }
+
+  // Called when the scale type dropdown changes.
+  onScaleTypeChange(event: Event): void {
+    const target = event.target as HTMLSelectElement;
+    this.selectedScaleType = target.value.toLowerCase();
+    this.musicService.setScaleType(this.selectedScaleType);
   }
 }

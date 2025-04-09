@@ -1,24 +1,14 @@
 <div>
-  <label for="scaleType">Scale Type:</label>
-  <select id="scaleType" [(ngModel)]="selectedScaleType">
+  <label for="scaleTypeSelect">Scale Type:</label>
+  <select id="scaleTypeSelect" [value]="selectedScaleType" (change)="onScaleTypeChange($event)">
     <option value="major">Major</option>
     <option value="minor">Minor</option>
   </select>
 </div>
+
 <div>
-  <label for="scaleContext">Scale Context:</label>
-  <select id="scaleContext" [(ngModel)]="selectedScaleContext">
-    <option value="full">Full</option>
-    <option value="triad">Triad</option>
-  </select>
-</div>
-<div>
-  <label for="rootNoteSelect">Select Root Note:</label>
+  <label for="rootNoteSelect">Root Note:</label>
   <select id="rootNoteSelect" [value]="selectedRootNote" (change)="onRootNoteChange($event)">
     <option *ngFor="let note of noteNames" [value]="note">{{ note }}</option>
   </select>
 </div>
-<div><label>Selected Scale: {{ selectedScaleType }}</label></div>
-<div><label>Selected Scale Context: {{ selectedScaleContext }}</label></div>
-<div><label>Selected Root Note: {{ selectedRootNote }}</label></div>
-
