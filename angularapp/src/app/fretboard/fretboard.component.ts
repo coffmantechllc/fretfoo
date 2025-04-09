@@ -39,19 +39,19 @@ export class FretboardComponent implements AfterViewInit {
   ngAfterViewInit() {
     this.renderFretboard();
 
-    // Subscribe to root note changes.
+    // Subscribe to changes in the selected root note.
     this.musicService.rootNote$.subscribe(rootNote => {
       this.highlightNotes(rootNote);
     });
-    // Subscribe to scale type changes.
+    // Subscribe to changes in the scale type.
     this.musicService.scaleType$.subscribe(scaleType => {
       this.selectedScaleType = scaleType;
-      // Optionally, re-highlight using the current root (if stored).
+      // Optionally re-highlight using the current root note if stored.
     });
   }
 
   renderFretboard() {
-    const width = 600;
+    const width = 1000;
     const height = 300;
     this.svg = d3.select("#fretboard").append("svg")
       .attr("width", width)
@@ -60,9 +60,9 @@ export class FretboardComponent implements AfterViewInit {
     const stringSpacing = height / (this.strings.length + 1);
     const fretSpacing = width / (this.frets + 1);
     const circleRadius = 10;
-    const offsetX = circleRadius; // Offset to properly position circles
+    const offsetX = circleRadius; // Offset to position circles properly
 
-    // Draw strings.
+    // Draw the strings.
     this.strings.forEach((_, i) => {
       this.svg.append("line")
         .attr("x1", 0)
@@ -84,7 +84,6 @@ export class FretboardComponent implements AfterViewInit {
         .attr("stroke-width", 2);
 
       this.strings.forEach((openNote, stringIndex) => {
-        // Calculate the note index for the fret.
         const openNoteIndex = this.noteNames.indexOf(openNote);
         const noteIndex = (openNoteIndex + fret) % 12;
         const noteName = this.noteNames[noteIndex];
@@ -93,9 +92,7 @@ export class FretboardComponent implements AfterViewInit {
         const group = this.svg.append("g")
           .attr("transform", `translate(${fret * fretSpacing + offsetX}, ${(stringIndex + 1) * stringSpacing})`)
           .attr("class", "note-group")
-          .attr("data-note", noteName)
-          .style("cursor", "pointer")
-          .on("click", () => this.toggleNote(group.select("circle"), key));
+          .attr("data-note", noteName);
 
         group.append("circle")
           .attr("r", circleRadius)
@@ -108,7 +105,8 @@ export class FretboardComponent implements AfterViewInit {
           .attr("font-size", "10px")
           .attr("font-family", "verdana")
           .text(noteName)
-          .style("pointer-events", "none");
+          // Set a default text fill.
+          .attr("fill", "black");
       });
     }
 
@@ -149,48 +147,41 @@ export class FretboardComponent implements AfterViewInit {
     });
   }
 
-  toggleNote(circle: any, key: string) {
-    if (this.selectedNotes.has(key)) {
-      this.selectedNotes.delete(key);
-      circle.attr("fill", "white");
-    } else {
-      this.selectedNotes.add(key);
-      circle.attr("fill", "red");
-    }
-  }
+  // Helper function to determine if a background color is dark.
+  private getLabelColor(bg: string): string {
+    const darkColors = ['brown', 'blue', 'violet', 'green'];
+    return darkColors.includes(bg.toLowerCase()) ? 'white' : 'black';
+  }  
 
-  // Highlight each note on the fretboard based on its interval (in semitones) relative to the selected root.
-  // The relationship is defined using the scaleIntervalsOfInterest (degrees 1 to 7) and the corresponding semitone mappings.
+  // Highlight each note by computing its interval (in semitones) relative to the selected root.
   highlightNotes(selectedRoot: string) {
-    let mapping: number[];
+    let scaleSemiTones: number[];
     let scaleIntervalColors: string[];
     if (this.selectedScaleType === 'major') {
-      mapping = this.majorScaleSemiTones;
+      scaleSemiTones = this.majorScaleSemiTones;
       scaleIntervalColors = this.majorIntervalColors;
     } else {
-      mapping = this.minorScaleSemiTones;
+      scaleSemiTones = this.minorScaleSemiTones;
       scaleIntervalColors = this.minorIntervalColors;
     }
     const noteNames = this.noteNames;
     const rootIdx = noteNames.indexOf(selectedRoot);
-
-    d3.selectAll(".note-group").each(function () {
-      const group = d3.select(this);
+    d3.selectAll(".note-group").each((_, i, nodes) => {
+      const group = d3.select(nodes[i]);
       const note = group.attr("data-note");
       const noteIdx = noteNames.indexOf(note);
       const interval = (noteIdx - rootIdx + 12) % 12;
-
-      // Determine the scale degree index based on the relationship with scaleIntervalsOfInterest.
-      // We assume mapping[i] corresponds to scale degree i+1.
       let degreeIndex = -1;
-      for (let i = 0; i < 7; i++) {
-        if (mapping[i] === interval) {
-          degreeIndex = i;
+      for (let j = 0; j < scaleSemiTones.length; j++) {
+        if (scaleSemiTones[j] === interval) {
+          degreeIndex = j;
           break;
         }
       }
       const fillColor = degreeIndex !== -1 ? scaleIntervalColors[degreeIndex] : "white";
       group.select("circle").attr("fill", fillColor);
+      group.select("text").attr("fill", this.getLabelColor(fillColor));
     });
   }
+
 }

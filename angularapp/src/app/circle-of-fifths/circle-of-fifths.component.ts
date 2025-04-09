@@ -30,14 +30,14 @@ export class CircleOfFifthsComponent implements AfterViewInit {
   // Local property for scale type.
   selectedScaleType: string = 'major';
 
-  // Consolidated color array for scale degrees 1-7.
-  // Degree 1 → red, 2 → brown, 3 → yellow, 4 → green, 5 → blue, 6 → orange, 7 → violet.
+  // Consolidated color array for scale degrees 1–7.
+  // Degree 1: red, 2: brown, 3: yellow, 4: green, 5: blue, 6: orange, 7: violet.
   scaleDegreeColors: string[] = ['red', 'brown', 'yellow', 'green', 'blue', 'orange', 'violet'];
 
-  // Scale mappings (semitones for degrees 1–7).
-  // Major scale: Degree 1:0, 2:2, 3:4, 4:5, 5:7, 6:9, 7:11.
+  // Scale mappings (in semitones) for degrees 1–7.
+  // Major scale: [0, 2, 4, 5, 7, 9, 11]
   majorScaleSemiTones: number[] = [0, 2, 4, 5, 7, 9, 11];
-  // Natural Minor scale: Degree 1:0, 2:2, 3:3, 4:5, 5:7, 6:8, 7:10.
+  // Natural Minor scale: [0, 2, 3, 5, 7, 8, 10]
   minorScaleSemiTones: number[] = [0, 2, 3, 5, 7, 8, 10];
 
   // Universal note order for computing relative intervals.
@@ -55,7 +55,7 @@ export class CircleOfFifthsComponent implements AfterViewInit {
     // Subscribe to scale type changes.
     this.musicService.scaleType$.subscribe(scaleType => {
       this.selectedScaleType = scaleType;
-      // Optionally re-highlight (if desired, based on stored root note)
+      // Optionally, re-highlight based on stored root note if needed.
     });
   }
 
@@ -68,7 +68,7 @@ export class CircleOfFifthsComponent implements AfterViewInit {
       .attr('width', width)
       .attr('height', height);
 
-    // Center the group.
+    // Center the group inside the SVG.
     const group = svg.append('g')
       .attr('transform', `translate(${width / 2}, ${height / 2})`);
 
@@ -114,7 +114,7 @@ export class CircleOfFifthsComponent implements AfterViewInit {
       .innerRadius((this.diminishedInner + this.diminishedOuter) / 2)
       .outerRadius((this.diminishedInner + this.diminishedOuter) / 2);
 
-    // === Render Innermost Ring: Major keys.
+    // Render the innermost ring: Major keys.
     majorArcs.forEach((d) => {
       const key = d.data;
       const g = group.append('g')
@@ -152,7 +152,7 @@ export class CircleOfFifthsComponent implements AfterViewInit {
         .style('pointer-events', 'none');
     });
 
-    // === Render Middle Ring: Minor keys.
+    // Render the middle ring: Minor keys.
     minorArcs.forEach((d) => {
       const key = d.data;
       const g = group.append('g')
@@ -190,7 +190,7 @@ export class CircleOfFifthsComponent implements AfterViewInit {
         .style('pointer-events', 'none');
     });
 
-    // === Render Outermost Ring: Diminished keys.
+    // Render the outermost ring: Diminished keys.
     diminishedArcs.forEach((d) => {
       const key = d.data;
       const g = group.append('g')
@@ -213,7 +213,7 @@ export class CircleOfFifthsComponent implements AfterViewInit {
           tooltip.style('left', `${event.pageX + 10}px`)
             .style('top', `${event.pageY - 20}px`);
         })
-        .on('mouseout', (event: any) => {
+        .on('mouseout', () => {
           tooltip.transition().duration(100).style('opacity', 0);
         });
 
@@ -249,63 +249,129 @@ export class CircleOfFifthsComponent implements AfterViewInit {
 
   // ---------------------------
   // Updated highlightRoot() using the consolidated color mapping.
-  // Additionally, highlight the major 7th degree on the diminished arc.
+  // This function now maps:
+  // - In the major ring: the relative major’s root (degree 1, red), 4th (green) and 5th (blue).
+  // - In the minor ring:
+  //     • For both scale types, map the 2nd and 3rd degrees (brown and yellow) of the relative major.
+  //     • Also (as before) highlight the relative minor (degree 6, orange).
+  // - In the diminished ring: highlight the major 7th (violet).
+  // Label text color is adjusted based on background brightness.
   highlightRoot(selectedRoot: string) {
     const unotes = this.universalNotes;
     const rootIdx = unotes.indexOf(selectedRoot);
 
+    let relativeMajor: string, relativeMinor: string;
     if (this.selectedScaleType === 'major') {
-      // For a major scale, relative minor is 9 semitones up.
-      const relativeMinor = unotes[(rootIdx + 9) % 12];
-      // Major ring: highlight the arc that matches the selected root with degree 1 (red).
+      relativeMajor = selectedRoot;
+      relativeMinor = unotes[(rootIdx + 9) % 12];
+    } else {
+      const baseMinor = selectedRoot.replace(/\s*m$/, '');
+      relativeMajor = unotes[(unotes.indexOf(baseMinor) + 3) % 12];
+      relativeMinor = baseMinor;
+    }
+
+    // Helper to choose a contrasting text color for dark backgrounds.
+    function getLabelColor(bg: string): string {
+      const darkColors = ['brown', 'blue', 'violet', 'green'];
+      return darkColors.includes(bg.toLowerCase()) ? 'white' : 'black';
+    }
+
+    // Compute relative major degrees (using the major scale semitone mapping).
+    const relMajIdx = unotes.indexOf(relativeMajor);
+    const relMaj2nd = unotes[(relMajIdx + this.majorScaleSemiTones[1]) % 12];  // degree 2 → brown
+    const relMaj3rd = unotes[(relMajIdx + this.majorScaleSemiTones[2]) % 12];  // degree 3 → yellow
+    const relMaj4th = unotes[(relMajIdx + this.majorScaleSemiTones[3]) % 12];  // degree 4 → green
+    const relMaj5th = unotes[(relMajIdx + this.majorScaleSemiTones[4]) % 12];  // degree 5 → blue
+
+    if (this.selectedScaleType === 'major') {
+      // Major ring (innermost): highlight the relative major's 1st, 4th, and 5th.
       d3.selectAll('.major-key').each((_, i, nodes) => {
         const group = d3.select(nodes[i]);
         const key = group.attr('data-key');
-        group.select('path').attr('fill', key === selectedRoot ? this.scaleDegreeColors[0] : 'white');
+        let fillColor = 'white';
+        if (key === relativeMajor) {
+          fillColor = this.scaleDegreeColors[0]; // red (degree 1)
+        } else if (key === relMaj4th) {
+          fillColor = this.scaleDegreeColors[3]; // green (degree 4)
+        } else if (key === relMaj5th) {
+          fillColor = this.scaleDegreeColors[4]; // blue (degree 5)
+        }
+        group.select('path').attr('fill', fillColor);
+        group.select('text').attr('fill', getLabelColor(fillColor));
       });
-      // Minor ring: highlight the arc that matches the relative minor with degree 6 (orange).
+
+      // Minor ring (middle): highlight:
+      // - The relative minor (degree 6, orange) AND
+      // - The 2nd and 3rd degrees of the relative major (brown and yellow).
       d3.selectAll('.minor-key').each((_, i, nodes) => {
         const group = d3.select(nodes[i]);
         const keyRaw = group.attr('data-key');
-        const key = keyRaw.replace(/m$/, '');
-        group.select('path').attr('fill', key === relativeMinor ? this.scaleDegreeColors[5] : 'lightyellow');
+        const baseKey = keyRaw.replace(/m$/, '');
+        let fillColor = 'lightyellow'; // default
+        if (baseKey === relativeMinor) {
+          fillColor = this.scaleDegreeColors[5]; // orange (degree 6)
+        } else if (baseKey === relMaj2nd) {
+          fillColor = this.scaleDegreeColors[1]; // brown (degree 2)
+        } else if (baseKey === relMaj3rd) {
+          fillColor = this.scaleDegreeColors[2]; // yellow (degree 3)
+        }
+        group.select('path').attr('fill', fillColor);
+        group.select('text').attr('fill', getLabelColor(fillColor));
       });
     } else if (this.selectedScaleType === 'minor') {
-      // For a minor scale, relative major is 3 semitones up.
-      const relativeMajor = unotes[(rootIdx + 3) % 12];
-      // Minor ring: highlight the arc that matches the selected minor root (strip "m") with degree 6 (orange).
+      // For minor scale, in the minor ring highlight the selected minor (after stripping "m") with orange,
+      // plus map the 2nd and 3rd degrees (of the relative major).
       d3.selectAll('.minor-key').each((_, i, nodes) => {
         const group = d3.select(nodes[i]);
         const keyRaw = group.attr('data-key');
-        const key = keyRaw.replace(/m$/, '');
-        group.select('path').attr('fill', key === selectedRoot ? this.scaleDegreeColors[5] : 'lightyellow');
+        const baseKey = keyRaw.replace(/m$/, '');
+        let fillColor = 'lightyellow';
+        if (baseKey === relativeMinor) {
+          fillColor = this.scaleDegreeColors[5]; // orange (degree 6)
+        }
+        const relMaj2ndMinor = unotes[(relMajIdx + this.majorScaleSemiTones[1]) % 12];
+        const relMaj3rdMinor = unotes[(relMajIdx + this.majorScaleSemiTones[2]) % 12];
+        if (baseKey === relMaj2ndMinor) {
+          fillColor = this.scaleDegreeColors[1]; // brown (degree 2)
+        } else if (baseKey === relMaj3rdMinor) {
+          fillColor = this.scaleDegreeColors[2]; // yellow (degree 3)
+        }
+        group.select('path').attr('fill', fillColor);
+        group.select('text').attr('fill', getLabelColor(fillColor));
       });
-      // Major ring: highlight the arc that matches the relative major with degree 1 (red).
+
+      // Major ring: highlight the relative major's 1st, 4th, and 5th.
       d3.selectAll('.major-key').each((_, i, nodes) => {
         const group = d3.select(nodes[i]);
         const key = group.attr('data-key');
-        group.select('path').attr('fill', key === relativeMajor ? this.scaleDegreeColors[0] : 'white');
+        let fillColor = 'white';
+        if (key === relativeMajor) {
+          fillColor = this.scaleDegreeColors[0]; // red (degree 1)
+        } else if (key === relMaj4th) {
+          fillColor = this.scaleDegreeColors[3]; // green (degree 4)
+        } else if (key === relMaj5th) {
+          fillColor = this.scaleDegreeColors[4]; // blue (degree 5)
+        }
+        group.select('path').attr('fill', fillColor);
+        group.select('text').attr('fill', getLabelColor(fillColor));
       });
     }
 
-    // Now, regardless of scale type, compute the major 7th.
-    // If scale type is major, major 7th = (root + 11) mod 12.
-    // If minor, compute relative major first, then major 7th = (relativeMajor + 11) mod 12.
-    let computedMajor7th: string;
-    if (this.selectedScaleType === 'major') {
-      computedMajor7th = unotes[(rootIdx + 11) % 12];
-    } else { // minor
-      const baseMinor = selectedRoot.replace(/\s*m$/, '');
-      const relativeMajor = unotes[(unotes.indexOf(baseMinor) + 3) % 12];
-      computedMajor7th = unotes[(unotes.indexOf(relativeMajor) + 11) % 12];
-    }
-    // Highlight the diminished ring arc that corresponds to the computed major 7th.
+    // For both scale types, in the diminished ring highlight the major 7th.
     d3.selectAll('.diminished-key').each((_, i, nodes) => {
       const group = d3.select(nodes[i]);
-      // Remove the 'ø' character from the diminished key.
-      const diminishedKeyRaw = group.attr('data-key');
-      const diminishedKey = diminishedKeyRaw.replace(/ø/g, '');
-      group.select('path').attr('fill', (diminishedKey === computedMajor7th) ? this.scaleDegreeColors[6] : 'white');
+      const diminishedKey = group.attr('data-key').replace(/ø/g, '');
+      let major7th: string;
+      if (this.selectedScaleType === 'major') {
+        major7th = unotes[(rootIdx + 11) % 12];
+      } else {
+        const baseMinor = selectedRoot.replace(/\s*m$/, '');
+        const relMaj = unotes[(unotes.indexOf(baseMinor) + 3) % 12];
+        major7th = unotes[(unotes.indexOf(relMaj) + 11) % 12];
+      }
+      const fillColor = (diminishedKey === major7th) ? this.scaleDegreeColors[6] : 'white';
+      group.select('path').attr('fill', fillColor);
+      group.select('text').attr('fill', getLabelColor(fillColor));
     });
   }
   // ---------------------------
