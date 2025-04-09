@@ -1,0 +1,19 @@
+.tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: #333;
+  color: white;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 13px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+text {
+  font-family: verdana;
+}
+
+:host {
+  font-family: verdana;
+}
