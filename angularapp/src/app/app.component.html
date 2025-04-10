@@ -3,7 +3,6 @@
     <h1>Fret Foo</h1>
     <p class="tagline">for the miserable guitarist whose ignorance of theory is as legendary as their mom</p>
   </header>
-
   <main class="main-content">
     <section class="component-section">
       <div class="selector-div">
@@ -17,8 +16,4 @@
       <app-circle-of-fifths (keySelected)="onKeySelect($event)"></app-circle-of-fifths>
     </section>
   </main>
-
-  <footer class="footer">
-    <p *ngIf="selectedKey">Selected Key: <span class="selected-key">{{ selectedKey }}</span></p>
-  </footer>
 </div>

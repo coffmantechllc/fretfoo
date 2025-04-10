@@ -1,14 +1,15 @@
-<div>
-  <label for="scaleTypeSelect">Scale Type:</label>
-  <select id="scaleTypeSelect" [value]="selectedScaleType" (change)="onScaleTypeChange($event)">
-    <option value="major">Major</option>
-    <option value="minor">Minor</option>
-  </select>
-</div>
-
-<div>
-  <label for="rootNoteSelect">Root Note:</label>
-  <select id="rootNoteSelect" [value]="selectedRootNote" (change)="onRootNoteChange($event)">
-    <option *ngFor="let note of noteNames" [value]="note">{{ note }}</option>
-  </select>
+<div class="scale-selector-container">
+  <div class="dropdown-group">
+    <label for="scaleTypeSelect">Scale Type:</label>
+    <select id="scaleTypeSelect" [value]="selectedScaleType" (change)="onScaleTypeChange($event)">
+      <option value="major">Major</option>
+      <option value="minor">Minor</option>
+    </select>
+  </div>
+  <div class="dropdown-group">
+    <label for="rootNoteSelect">Root Note:</label>
+    <select id="rootNoteSelect" [value]="selectedRootNote" (change)="onRootNoteChange($event)">
+      <option *ngFor="let note of noteNames" [value]="note">{{ note }}</option>
+    </select>
+  </div>
 </div>
