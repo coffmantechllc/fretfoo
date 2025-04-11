@@ -1,4 +1,3 @@
-// fretboard.component.ts
 import { Component, AfterViewInit } from '@angular/core';
 import * as d3 from 'd3';
 import { MusicSelectionService } from '../services/music-selection.service';
@@ -9,72 +8,106 @@ import { MusicSelectionService } from '../services/music-selection.service';
   styleUrls: ['./fretboard.component.css']
 })
 export class FretboardComponent implements AfterViewInit {
-  // Standard tuning strings for a guitar.
   strings = ['E', 'B', 'G', 'D', 'A', 'E'];
-  // Total number of frets.
   frets = 24;
-  // Chromatic scale used for note computation.
   noteNames = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
 
-  // Mapping for a Major scale (expressed in semitones).
-  majorScaleSemiTones: number[] = [0, 2, 4, 5, 7, 9, 11];
-  majorIntervalColors: string[] = ['red', 'brown', 'yellow', 'green', 'blue', 'orange', 'violet'];
+  majorScaleSemiTones = [0, 2, 4, 5, 7, 9, 11];
+  majorIntervalColors = ['red', 'brown', 'yellow', 'green', 'blue', 'orange', 'violet'];
 
-  // Mapping for a Natural Minor scale (expressed in semitones).
-  minorScaleSemiTones: number[] = [0, 2, 3, 5, 7, 8, 10];
-  minorIntervalColors: string[] = ['red', 'brown', 'yellow', 'green', 'blue', 'orange', 'violet'];
+  minorScaleSemiTones = [0, 2, 3, 5, 7, 8, 10];
+  minorIntervalColors = ['red', 'brown', 'yellow', 'green', 'blue', 'orange', 'violet'];
 
-  // New array representing the scale degrees (1 through 7).
-  scaleIntervalsOfInterest: number[] = [1, 2, 3, 4, 5, 6, 7];
-
-  // (Optional) for manual note toggling.
   selectedNotes: Set<string> = new Set();
   private svg: any;
-
-  // Current scale type (defaults to "major").
   selectedScaleType: string = 'major';
+  private selectedRoot: string = 'C';
 
   constructor(private musicService: MusicSelectionService) { }
 
   ngAfterViewInit() {
     this.renderFretboard();
 
-    // Subscribe to changes in the selected root note.
     this.musicService.rootNote$.subscribe(rootNote => {
+      this.selectedRoot = rootNote;
       this.highlightNotes(rootNote);
     });
-    // Subscribe to changes in the scale type.
+
     this.musicService.scaleType$.subscribe(scaleType => {
       this.selectedScaleType = scaleType;
-      // Optionally re-highlight using the current root note if stored.
+      this.highlightNotes(this.selectedRoot);
     });
   }
 
   renderFretboard() {
     const width = 1000;
     const height = 300;
-    this.svg = d3.select("#fretboard").append("svg")
-      .attr("width", width)
-      .attr("height", height);
-
+    const circleRadius = 10;
+    const offsetX = circleRadius + 50;
     const stringSpacing = height / (this.strings.length + 1);
     const fretSpacing = width / (this.frets + 1);
-    const circleRadius = 10;
-    const offsetX = circleRadius; // Offset to position circles properly
 
-    // Draw the strings.
-    this.strings.forEach((_, i) => {
-      this.svg.append("line")
-        .attr("x1", 0)
-        .attr("y1", (i + 1) * stringSpacing)
-        .attr("x2", width)
-        .attr("y2", (i + 1) * stringSpacing)
+    this.svg = d3.select("#fretboard").append("svg")
+      .attr("width", width + offsetX + 100)
+      .attr("height", height);
+
+    // Create a layer for strings behind notes
+    const stringLayer = this.svg.append("g").attr("class", "string-layer");
+
+    // Create nut note group above string layer
+    const nutGroup = this.svg.append("g")
+      .attr("class", "nut-group")
+      .attr("transform", `translate(${offsetX - fretSpacing}, 0)`);
+
+    this.strings.forEach((note, i) => {
+      const y = (i + 1) * stringSpacing;
+
+      // Draw strings first (behind notes)
+      stringLayer.append("line")
+        .attr("x1", offsetX - fretSpacing)
+        .attr("y1", y)
+        .attr("x2", width + offsetX)
+        .attr("y2", y)
         .attr("stroke", "black")
         .attr("stroke-width", 2);
+
+      // Draw nut open note
+      const group = nutGroup.append("g")
+        .attr("transform", `translate(0, ${y})`)
+        .attr("class", "nut-note-group")
+        .attr("data-note", note);
+
+      group.append("rect")
+        .attr("x", -30)
+        .attr("y", -12)
+        .attr("width", 60)
+        .attr("height", 24)
+        .attr("rx", 4)
+        .attr("ry", 4)
+        .attr("fill", "white")
+        .attr("stroke", "black")
+        .attr("stroke-width", 1.5);
+
+      group.append("circle")
+        .attr("cx", 0)
+        .attr("cy", 0)
+        .attr("r", circleRadius)
+        .attr("fill", "white")
+        .attr("stroke", "black")
+        .attr("stroke-width", 2);
+
+      group.append("text")
+        .attr("x", 0)
+        .attr("text-anchor", "middle")
+        .attr("dy", "0.3em")
+        .attr("font-size", "10px")
+        .attr("font-family", "verdana")
+        .attr("fill", "black")
+        .text(note);
     });
 
-    // Draw frets and note circles.
-    for (let fret = 0; fret <= this.frets; fret++) {
+    // Draw frets and note positions
+    for (let fret = 1; fret <= this.frets; fret++) {
       this.svg.append("line")
         .attr("x1", fret * fretSpacing + offsetX)
         .attr("y1", stringSpacing)
@@ -87,7 +120,6 @@ export class FretboardComponent implements AfterViewInit {
         const openNoteIndex = this.noteNames.indexOf(openNote);
         const noteIndex = (openNoteIndex + fret) % 12;
         const noteName = this.noteNames[noteIndex];
-        const key = `${stringIndex}-${fret}`;
 
         const group = this.svg.append("g")
           .attr("transform", `translate(${fret * fretSpacing + offsetX}, ${(stringIndex + 1) * stringSpacing})`)
@@ -105,7 +137,6 @@ export class FretboardComponent implements AfterViewInit {
           .attr("font-size", "10px")
           .attr("font-family", "verdana")
           .text(noteName)
-          // Set a default text fill.
           .attr("fill", "black");
       });
     }
@@ -145,18 +176,24 @@ export class FretboardComponent implements AfterViewInit {
         .attr("font-size", "14px")
         .attr("font-family", "verdana");
     });
+
+    // Add fret markers
+    const fretMarkers = [1, 3, 5, 7, 9, 12, 15, 17, 19, 21];
+    fretMarkers.forEach(fret => {
+      const x = fret * fretSpacing + offsetX - fretSpacing / 2;
+      if (fret === 12) {
+        this.svg.append("circle").attr("cx", x).attr("cy", (height / 2) - 10).attr("r", 5).attr("fill", "gray").attr("stroke", "black");
+        this.svg.append("circle").attr("cx", x).attr("cy", (height / 2) + 10).attr("r", 5).attr("fill", "gray").attr("stroke", "black");
+      } else {
+        this.svg.append("circle").attr("cx", x).attr("cy", height / 2).attr("r", 5).attr("fill", "gray").attr("stroke", "black");
+      }
+    });
   }
 
-  // Helper function to determine if a background color is dark.
-  private getLabelColor(bg: string): string {
-    const darkColors = ['brown', 'blue', 'violet', 'green'];
-    return darkColors.includes(bg.toLowerCase()) ? 'white' : 'black';
-  }  
-
-  // Highlight each note by computing its interval (in semitones) relative to the selected root.
   highlightNotes(selectedRoot: string) {
     let scaleSemiTones: number[];
     let scaleIntervalColors: string[];
+
     if (this.selectedScaleType === 'major') {
       scaleSemiTones = this.majorScaleSemiTones;
       scaleIntervalColors = this.majorIntervalColors;
@@ -164,13 +201,15 @@ export class FretboardComponent implements AfterViewInit {
       scaleSemiTones = this.minorScaleSemiTones;
       scaleIntervalColors = this.minorIntervalColors;
     }
-    const noteNames = this.noteNames;
-    const rootIdx = noteNames.indexOf(selectedRoot);
+
+    const rootIdx = this.noteNames.indexOf(selectedRoot);
+
     d3.selectAll(".note-group").each((_, i, nodes) => {
       const group = d3.select(nodes[i]);
       const note = group.attr("data-note");
-      const noteIdx = noteNames.indexOf(note);
+      const noteIdx = this.noteNames.indexOf(note);
       const interval = (noteIdx - rootIdx + 12) % 12;
+
       let degreeIndex = -1;
       for (let j = 0; j < scaleSemiTones.length; j++) {
         if (scaleSemiTones[j] === interval) {
@@ -178,10 +217,36 @@ export class FretboardComponent implements AfterViewInit {
           break;
         }
       }
+
       const fillColor = degreeIndex !== -1 ? scaleIntervalColors[degreeIndex] : "white";
       group.select("circle").attr("fill", fillColor);
       group.select("text").attr("fill", this.getLabelColor(fillColor));
     });
+
+    d3.selectAll(".nut-note-group").each((_, i, nodes) => {
+      const group = d3.select(nodes[i]);
+      const note = group.attr("data-note");
+      const noteIdx = this.noteNames.indexOf(note);
+      const interval = (noteIdx - rootIdx + 12) % 12;
+
+      let degreeIndex = -1;
+      for (let j = 0; j < scaleSemiTones.length; j++) {
+        if (scaleSemiTones[j] === interval) {
+          degreeIndex = j;
+          break;
+        }
+      }
+
+      const fillColor = degreeIndex !== -1 ? scaleIntervalColors[degreeIndex] : "white";
+      const textColor = this.getLabelColor(fillColor);
+
+      group.select("circle").attr("fill", fillColor);
+      group.select("text").attr("fill", textColor);
+    });
   }
 
+  private getLabelColor(bg: string): string {
+    const darkColors = ['brown', 'blue', 'violet', 'green'];
+    return darkColors.includes(bg.toLowerCase()) ? 'white' : 'black';
+  }
 }
