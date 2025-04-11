@@ -16,7 +16,7 @@ export class CircleOfFifthsComponent implements AfterViewInit {
   // Middle ring: Minor keys (with a trailing " m")
   minorKeys: string[] = ['Am', 'Em', 'Bm', 'Gbm', 'Dbm', 'Abm', 'Ebm', 'Bbm', 'Fm', 'Cm', 'Gm', 'Dm'];
   // Outermost ring: Diminished keys (explicitly defined)
-  diminishedKeys: string[] = ['Bø', 'Gbø', 'Dbø', 'Abø', 'Ebø', 'Bbø', 'Fø', 'Cø', 'Gø', 'Dø', 'Aø', 'Eø'];
+  diminishedKeys: string[] = ['B°', 'Gb°', 'Db°', 'Ab°', 'Eb°', 'Bb°', 'F°', 'C°', 'G°', 'D°', 'A°', 'E°'];
 
   majorInner: number = 70;
   majorOuter: number = 110;
