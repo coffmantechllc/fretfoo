@@ -139,11 +139,22 @@ export class FretboardComponent implements AfterViewInit {
           .attr("transform", `translate(${fret * fretSpacing + offsetX}, ${(stringIndex + 1) * stringSpacing})`)
           .attr("class", "note-group")
           .attr("data-note", noteName);
-
-        group.append("circle")
-          .attr("r", circleRadius)
-          .attr("fill", "white")
-          .attr("stroke", "black");
+        let shape = this.getNoteShape(noteIndex);
+        if (shape === 'circle') {
+          group.append("circle")
+            .attr("r", circleRadius)
+            .attr("fill", "white")
+            .attr("stroke", "black");
+        }
+        if (shape === 'rect') {
+          group.append("rect")
+            .attr("x", -10)
+            .attr("y", -10)
+            .attr("width", 20)
+            .attr("height", 20)
+            .attr("fill", "white")
+            .attr("stroke", "black");
+        }
 
         group.append("text")
           .attr("text-anchor", "middle")
@@ -255,8 +266,9 @@ export class FretboardComponent implements AfterViewInit {
           fillColor = scaleIntervalColors[degreeIndex];
         }
       }
+      let shape = this.getNoteShape(noteIdx);
 
-      group.select("circle").attr("fill", fillColor);
+      group.select(shape).attr("fill", fillColor);
       group.select("text").attr("fill", this.getLabelColor(fillColor));
     });
 
@@ -277,7 +289,7 @@ export class FretboardComponent implements AfterViewInit {
           fillColor = scaleIntervalColors[degreeIndex];
         }
       }
-
+      
       group.select("circle").attr("fill", fillColor);
       group.select("text").attr("fill", this.getLabelColor(fillColor));
     });
@@ -288,22 +300,7 @@ export class FretboardComponent implements AfterViewInit {
     return darkColors.includes(bg.toUpperCase()) ? 'white' : 'black';
   }
 
-  private appendNoteShape(group: any, shape: string, fill: string) {
-    if (shape === "rect") {
-      group.append("rect")
-        .attr("x", -10)
-        .attr("y", -10)
-        .attr("width", 20)
-        .attr("height", 20)
-        .attr("rx", 4)
-        .attr("ry", 4)
-        .attr("fill", fill)
-        .attr("stroke", "black");
-    } else {
-      group.append("circle")
-        .attr("r", 10)
-        .attr("fill", fill)
-        .attr("stroke", "black");
-    }
+  private getNoteShape(interval: number): string {
+    return this.chromaticSemiToneIndexShape[interval];
   }
 }
