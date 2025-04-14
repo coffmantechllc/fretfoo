@@ -31,12 +31,11 @@ export class CircleOfFifthsComponent implements AfterViewInit {
   selectedScaleType: string = 'major';
 
   // Consolidated color array for scale degrees 1–7.
-  // Degree 1: red, 2: brown, 3: yellow, 4: green, 5: blue, 6: orange, 7: violet.
-  scaleDegreeColors: string[] = ['red', 'brown', 'yellow', 'green', 'blue', 'orange', 'violet'];
+  scaleDegreeColors: string[] = ['#FF0000', '#FFA500', '#FFFF00', '#ADFF2F', '#008080', '#4B0082', '#C71585'];
 
   // Scale mappings (in semitones) for degrees 1–7.
   // Major scale: [0, 2, 4, 5, 7, 9, 11]
-  majorScaleSemiTones: number[] = [0, 2, 4, 5, 7, 9, 11];
+  majorScaleSemiTonesIndex: number[] = [0, 2, 4, 5, 7, 9, 11];
   // Natural Minor scale: [0, 2, 3, 5, 7, 8, 10]
   minorScaleSemiTones: number[] = [0, 2, 3, 5, 7, 8, 10];
 
@@ -258,7 +257,7 @@ export class CircleOfFifthsComponent implements AfterViewInit {
     const rootIdx = unotes.indexOf(selectedRoot);
 
     let relativeMajor: string, relativeMinor: string;
-    if (this.selectedScaleType === 'major') {
+    if (this.selectedScaleType === 'major' || this.selectedScaleType === 'chromatic') {
       relativeMajor = selectedRoot;
       relativeMinor = unotes[(rootIdx + 9) % 12];
     } else {
@@ -269,29 +268,29 @@ export class CircleOfFifthsComponent implements AfterViewInit {
 
     // Helper to choose a contrasting text color.
     const getLabelColor = (bg: string): string => {
-      const darkColors = ['brown', 'blue', 'violet', 'green'];
-      return darkColors.includes(bg.toLowerCase()) ? 'white' : 'black';
+      const darkColors = ['#FF0000', '#0000FF', '#4B0082', '#008080', '#C71585', '#800080'];
+      return darkColors.includes(bg.toUpperCase()) ? 'white' : 'black';
     };
 
     // Compute relative major degrees.
     const relMajIdx = unotes.indexOf(relativeMajor);
-    const relMaj2nd = unotes[(relMajIdx + this.majorScaleSemiTones[1]) % 12];  // degree 2
-    const relMaj3rd = unotes[(relMajIdx + this.majorScaleSemiTones[2]) % 12];  // degree 3
-    const relMaj4th = unotes[(relMajIdx + this.majorScaleSemiTones[3]) % 12];  // degree 4
-    const relMaj5th = unotes[(relMajIdx + this.majorScaleSemiTones[4]) % 12];  // degree 5
+    const relMaj2nd = unotes[(relMajIdx + this.majorScaleSemiTonesIndex[1]) % 12];  // degree 2
+    const relMaj3rd = unotes[(relMajIdx + this.majorScaleSemiTonesIndex[2]) % 12];  // degree 3
+    const relMaj4th = unotes[(relMajIdx + this.majorScaleSemiTonesIndex[3]) % 12];  // degree 4
+    const relMaj5th = unotes[(relMajIdx + this.majorScaleSemiTonesIndex[4]) % 12];  // degree 5
 
-    if (this.selectedScaleType === 'major') {
+    if (this.selectedScaleType === 'major' || this.selectedScaleType === 'chromatic') {
       // Major ring: highlight 1st, 4th, and 5th of the relative major.
       d3.selectAll('.major-key').each((_, i, nodes) => {
         const group = d3.select(nodes[i]);
         const key = group.attr('data-key');
         let fillColor = 'white';
         if (key === relativeMajor) {
-          fillColor = this.scaleDegreeColors[0]; // red
+          fillColor = this.scaleDegreeColors[0]; 
         } else if (key === relMaj4th) {
-          fillColor = this.scaleDegreeColors[3]; // green
+          fillColor = this.scaleDegreeColors[3];
         } else if (key === relMaj5th) {
-          fillColor = this.scaleDegreeColors[4]; // blue
+          fillColor = this.scaleDegreeColors[4]; 
         }
         group.select('path').attr('fill', fillColor);
         group.select('text').attr('fill', getLabelColor(fillColor));
@@ -304,11 +303,11 @@ export class CircleOfFifthsComponent implements AfterViewInit {
         const baseKey = keyRaw.replace(/m$/, '');
         let fillColor = 'lightyellow';
         if (baseKey === relativeMinor) {
-          fillColor = this.scaleDegreeColors[5]; // orange (degree 6)
+          fillColor = this.scaleDegreeColors[5]; 
         } else if (baseKey === relMaj2nd) {
-          fillColor = this.scaleDegreeColors[1]; // brown (degree 2)
+          fillColor = this.scaleDegreeColors[1]; 
         } else if (baseKey === relMaj3rd) {
-          fillColor = this.scaleDegreeColors[2]; // yellow (degree 3)
+          fillColor = this.scaleDegreeColors[2]; 
         }
         group.select('path').attr('fill', fillColor);
         group.select('text').attr('fill', getLabelColor(fillColor));
@@ -320,11 +319,11 @@ export class CircleOfFifthsComponent implements AfterViewInit {
         const key = group.attr('data-key');
         let fillColor = 'white';
         if (key === relativeMajor) {
-          fillColor = this.scaleDegreeColors[0]; // red
+          fillColor = this.scaleDegreeColors[0]; 
         } else if (key === relMaj4th) {
-          fillColor = this.scaleDegreeColors[3]; // green
+          fillColor = this.scaleDegreeColors[3]; 
         } else if (key === relMaj5th) {
-          fillColor = this.scaleDegreeColors[4]; // blue
+          fillColor = this.scaleDegreeColors[4]; 
         }
         group.select('path').attr('fill', fillColor);
         group.select('text').attr('fill', getLabelColor(fillColor));
@@ -338,11 +337,11 @@ export class CircleOfFifthsComponent implements AfterViewInit {
         const baseKey = keyRaw.replace(/m$/, '');
         let fillColor = 'lightyellow';
         if (baseKey === relativeMinor) {
-          fillColor = this.scaleDegreeColors[5]; // orange
+          fillColor = this.scaleDegreeColors[5]; 
         } else if (baseKey === relMaj2nd) {
-          fillColor = this.scaleDegreeColors[1]; // brown
+          fillColor = this.scaleDegreeColors[1]; 
         } else if (baseKey === relMaj3rd) {
-          fillColor = this.scaleDegreeColors[2]; // yellow
+          fillColor = this.scaleDegreeColors[2]; 
         }
         group.select('path').attr('fill', fillColor);
         group.select('text').attr('fill', getLabelColor(fillColor));
@@ -352,9 +351,9 @@ export class CircleOfFifthsComponent implements AfterViewInit {
     // Always reset the diminished ring, then highlight the major 7th.
     d3.selectAll('.diminished-key').each((_, i, nodes) => {
       const group = d3.select(nodes[i]);
-      const diminishedKey = group.attr('data-key').replace(/ø/g, '');
+      const diminishedKey = group.attr('data-key').replace(/°/g, '');
       let major7th: string;
-      if (this.selectedScaleType === 'major') {
+      if (this.selectedScaleType === 'major' || this.selectedScaleType === 'chromatic') {
         major7th = unotes[(rootIdx + 11) % 12];
       } else {
         const baseMinor = selectedRoot.replace(/\s*m$/, '');
@@ -366,5 +365,4 @@ export class CircleOfFifthsComponent implements AfterViewInit {
       group.select('text').attr('fill', getLabelColor(fillColor));
     });
   }
-  // ---------------------------
 }
